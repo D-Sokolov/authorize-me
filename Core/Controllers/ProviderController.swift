@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import WebKit
 
 class ProviderController: UINavigationController {
     
@@ -16,7 +17,7 @@ class ProviderController: UINavigationController {
     
     private let cancelButtonTitle = "Cancel"
     
-    private var webView: UIWebView!
+    private var webView: WKWebView!
     private var webViewController: UIViewController!
     
     override func viewDidLoad() {
@@ -29,10 +30,10 @@ class ProviderController: UINavigationController {
     }
     
     private func configureWebView() {
-        webView = UIWebView(frame: view.bounds)
-        webView.delegate = self
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        webView.loadRequest(request)
+        webView = WKWebView(frame: view.bounds)
+            webView.navigationDelegate = self
+            webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            webView.load(request)
     }
     
     private func configureWebViewController() {
@@ -59,18 +60,19 @@ class ProviderController: UINavigationController {
     
 }
 
-extension ProviderController: UIWebViewDelegate {
+extension ProviderController: WKNavigationDelegate, WKUIDelegate {
     
-    func webView(_ webView: UIWebView,
-                 shouldStartLoadWith request: URLRequest,
-                 navigationType: UIWebView.NavigationType) -> Bool {
-        
-        guard let url = request.url, url.absoluteString.hasPrefix(redirectUri) else {
-            return true
+    public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if navigationAction.request.url?.absoluteString.hasPrefix(redirectUri) ?? false {
+            complete(withUrl: navigationAction.request.url, error: nil)
+           decisionHandler(.cancel)
+            
+        } else {
+            decisionHandler(.allow)
         }
-        
-        complete(withUrl: url, error: nil)
-        return false
     }
-
+    
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    // print("didStartProvisionalNavigation - webView.url: (String(describing: webView.url?.description))")
+    }
 }
